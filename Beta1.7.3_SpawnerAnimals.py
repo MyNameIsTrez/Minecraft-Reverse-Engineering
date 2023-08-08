@@ -11,7 +11,7 @@ from enum import Enum, auto
 #     return ChunkPosition(x, y, z)
 
 
-def performSpawning(players, spawnMonsters):
+def performSpawning(players, spawnHostileMobs):
     eligibleChunksForSpawning = set()
 
     # Add the chunks surrounding every player to eligibleChunksForSpawning
@@ -33,8 +33,11 @@ def performSpawning(players, spawnMonsters):
     spawned = 0
     spawnPoint = getSpawnPoint()
 
+    # Spawn Hostile mobs, then Passive mobs, then Squid
     for mobType in MobType:
-        if mobType == MobType.Monster and not spawnMonsters:
+        
+        # Don't spawn Hostile mobs if spawnHostileMobs was False
+        if mobType == MobType.Hostile and not spawnHostileMobs:
             continue
 
         # In singleplayer this will always be 1!
@@ -64,10 +67,10 @@ def performSpawning(players, spawnMonsters):
             if blockType == BlockType.Normal:
                 continue
 
-            if blockType == BlockType.Air and mobType == MobType.WaterCreature:
+            if blockType == BlockType.Air and mobType == MobType.Squid:
                 continue
 
-            if blockType == BlockType.Water and mobType != MobType.WaterCreature:
+            if blockType == BlockType.Water and mobType != MobType.Squid:
                 continue
 
             n10 = 0
@@ -119,9 +122,9 @@ class ChunkCoord:
 
 
 class MobType(Enum):
-    Monster = auto()
-    Creature = auto()
-    WaterCreature = auto()
+    Hostile = auto()
+    Passive = auto()
+    Squid = auto()
 
 
 def getMobTypeCount(mobType):
@@ -129,11 +132,11 @@ def getMobTypeCount(mobType):
 
 
 def getMaxMobTypeCount(mobType):
-    if mobType == MobType.Monster:
+    if mobType == MobType.Hostile:
         return 70
-    elif mobType == MobType.Creature:
+    elif mobType == MobType.Passive:
         return 15
-    elif mobType == MobType.WaterCreature:
+    elif mobType == MobType.Squid:
         return 5
     else:
         raise Unreachable()
@@ -157,7 +160,7 @@ class Biome(Enum):
 
 
 def getSpawnableMobs(biome, mobType):
-    if mobType == MobType.Monster:
+    if mobType == MobType.Hostile:
         mobs = [
             MobWithWeight(MobName.Spider, 10),
             MobWithWeight(MobName.Zombie, 10),
@@ -169,7 +172,7 @@ def getSpawnableMobs(biome, mobType):
             mobs.append(MobWithWeight(MobName.Ghast, 10))
             mobs.append(MobWithWeight(MobName.ZombiePigman, 10))
         return mobs
-    elif mobType == MobType.Creature:
+    elif mobType == MobType.Passive:
         mobs = [
             MobWithWeight(MobName.Sheep, 12),
             MobWithWeight(MobName.Pig, 10),
@@ -179,7 +182,7 @@ def getSpawnableMobs(biome, mobType):
         if biome == Biome.Forest or biome == Biome.Taiga:
             mobs.append(MobWithWeight(MobName.Wolf, 2))
         return mobs
-    elif mobType == MobType.WaterCreature:
+    elif mobType == MobType.Squid:
         return [
             MobWithWeight(MobName.Squid, 10),
         ]
