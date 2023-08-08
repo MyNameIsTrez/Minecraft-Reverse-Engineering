@@ -2,6 +2,14 @@ import random
 from dataclasses import dataclass
 from enum import Enum, auto
 
+# def getRandomSpawningPointInChunk(x_offset, z_offset):
+#     # Chunks have a width and length of 16
+#     x = x_offset + random.randrange(16)
+#     # The world is only 128 blocks high in Beta 1.7.3
+#     y = random.randrange(128)
+#     z = z_offset + random.randrange(16)
+#     return ChunkPosition(x, y, z)
+
 
 def performSpawning(players, spawnMonsters):
     eligibleChunksForSpawning = set()
@@ -26,7 +34,7 @@ def performSpawning(players, spawnMonsters):
     spawnPoint = getSpawnPoint()
 
     for mobType in MobType:
-        if mobType == MobType.MONSTER and not spawnMonsters:
+        if mobType == MobType.Monster and not spawnMonsters:
             continue
 
         # In singleplayer this will always be 1!
@@ -44,24 +52,76 @@ def performSpawning(players, spawnMonsters):
             spawnableMobs = getSpawnableMobs(biome, mobType)
             mob = getRandomMob(spawnableMobs)
 
+            # Get random spawnpoint in chunk
+            # Chunks have a width and length of 16
+            x = chunkCoord.x * 16 + random.randrange(16)
+            # The world is only 128 blocks high in Beta 1.7.3
+            y = random.randrange(128)
+            z = chunkCoord.z * 16 + random.randrange(16)
 
-def getRandomSpawningPointInChunk(world, x_offset, z_offset):
-    # Chunks have a width and length of 16
-    x = x_offset + random.randrange(16)
-    # The world is only 128 blocks high in Beta 1.7.3
-    y = random.randrange(128)
-    z = z_offset + random.randrange(16)
-    return ChunkPosition(x, y, z)
+            blockType = getBlockType(x, y, z)
+
+            if blockType == BlockType.Normal:
+                continue
+
+            if blockType == BlockType.Air and mobType == MobType.WaterCreature:
+                continue
+
+            if blockType == BlockType.Water and mobType != MobType.WaterCreature:
+                continue
+
+            n10 = 0
+
+            x_copy = x
+            y_copy = y
+            z_copy = z
+
+            for i in range(3):
+                x = x_copy
+                y = y_copy
+                z = z_copy
+
+                unknown = 6
+
+                for j in range(4):
+
+                    if not SpawnerAnimals.canCreatureTypeSpawnAtLocation(enumCreatureType, world, n11 += world.rand.nextInt(n14) - world.rand.nextInt(n14), n12 += world.rand.nextInt(1) - world.rand.nextInt(1), n13 += world.rand.nextInt(n14) - world.rand.nextInt(n14)):
+                        continue
+
+                    # if (!SpawnerAnimals.canCreatureTypeSpawnAtLocation(enumCreatureType, world, n11 += world.rand.nextInt(n14) - world.rand.nextInt(n14), n12 += world.rand.nextInt(1) - world.rand.nextInt(1), n13 += world.rand.nextInt(n14) - world.rand.nextInt(n14)) || world.getClosestPlayer(f7 = (float)n11 + 0.5f, f6 = (float)n12, f5 = (float)n13 + 0.5f, 24.0) != null || (f4 = (f3 = f7 - (float)((ChunkCoordinates)object).x) * f3 + (f2 = f6 - (float)((ChunkCoordinates)object).y) * f2 + (f = f5 - (float)((ChunkCoordinates)object).z) * f) < 576.0f) continue;
+
+                    # try {
+                    #     entityLiving = (EntityLiving)spawnListEntry2.entityClass.getConstructor(World.class).newInstance(world);
+                    # } catch (Exception exception) {
+                    #     exception.printStackTrace();
+                    #     return n;
+                    # }
+
+                    # entityLiving.setLocationAndAngles(f7, f6, f5, world.rand.nextFloat() * 360.0f, 0.0f);
+                    
+                    # if (entityLiving.getCanSpawnHere()) {
+                    #     world.entityJoinedWorld(entityLiving);
+                    #     SpawnerAnimals.creatureSpecificInit(entityLiving, world, f7, f6, f5);
+                    #     if (++n10 >= entityLiving.getMaxSpawnedInChunk()) continue block6;
+                    # }
+                    
+                    # n += n10;
 
 
-class ChunkCoord:
+def getSpawnPoint():
     pass
 
 
+@dataclass
+class ChunkCoord:
+    x: int
+    y: int
+
+
 class MobType(Enum):
-    MONSTER = auto()
-    CREATURE = auto()
-    WATER_CREATURE = auto()
+    Monster = auto()
+    Creature = auto()
+    WaterCreature = auto()
 
 
 def getMobTypeCount(mobType):
@@ -69,11 +129,11 @@ def getMobTypeCount(mobType):
 
 
 def getMaxMobTypeCount(mobType):
-    if mobType == MobType.MONSTER:
+    if mobType == MobType.Monster:
         return 70
-    elif mobType == MobType.CREATURE:
+    elif mobType == MobType.Creature:
         return 15
-    elif mobType == MobType.WATER_CREATURE:
+    elif mobType == MobType.WaterCreature:
         return 5
     else:
         raise Unreachable()
@@ -97,7 +157,7 @@ class Biome(Enum):
 
 
 def getSpawnableMobs(biome, mobType):
-    if mobType == MobType.MONSTER:
+    if mobType == MobType.Monster:
         mobs = [
             MobWithWeight(MobName.Spider, 10),
             MobWithWeight(MobName.Zombie, 10),
@@ -109,7 +169,7 @@ def getSpawnableMobs(biome, mobType):
             mobs.append(MobWithWeight(MobName.Ghast, 10))
             mobs.append(MobWithWeight(MobName.ZombiePigman, 10))
         return mobs
-    elif mobType == MobType.CREATURE:
+    elif mobType == MobType.Creature:
         mobs = [
             MobWithWeight(MobName.Sheep, 12),
             MobWithWeight(MobName.Pig, 10),
@@ -119,7 +179,7 @@ def getSpawnableMobs(biome, mobType):
         if biome == Biome.Forest or biome == Biome.Taiga:
             mobs.append(MobWithWeight(MobName.Wolf, 2))
         return mobs
-    elif mobType == MobType.WATER_CREATURE:
+    elif mobType == MobType.WaterCreature:
         return [
             MobWithWeight(MobName.Squid, 10),
         ]
@@ -165,3 +225,13 @@ def getRandomMob(mobs):
         return mob
 
     return mobs[0]
+
+
+def getBlockType(x, y, z):
+    pass
+
+
+class BlockType(Enum):
+    Normal = auto()
+    Air = auto()
+    Water = auto()
