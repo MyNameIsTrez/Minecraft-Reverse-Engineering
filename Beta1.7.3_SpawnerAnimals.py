@@ -28,7 +28,7 @@ def performSpawning(players, spawnHostileMobs):
     # Note that in this Beta 1.7.3 version passive mobs and squid spawn every tick,
     # rather than every 400 ticks like in modern versions (even version 1.2.5)!
     for mobType in MobType:
-        # Don't spawn Hostile mobs if spawnHostileMobs was False
+        # Don't spawn Hostile mobs if spawnHostileMobs is False
         if mobType == MobType.Hostile and not spawnHostileMobs:
             continue
 
@@ -62,38 +62,42 @@ def performSpawningNearChunk(chunkCoord, mobType, spawnPoint):
 
     blockType = getBlockType(x, y, z)
 
+    # Can't spawn inside of a normal block
     if blockType == BlockType.Normal:
         return
 
+    # Squid can't spawn in air
     if blockType == BlockType.Air and mobType == MobType.Squid:
         return
 
+    # Other mobs can't spawn in water
     if blockType == BlockType.Water and mobType != MobType.Squid:
         return
 
     spawnedNearChunk = 0
 
-    x_copy = x
-    y_copy = y
-    z_copy = z
+    pack_center_x = x
+    pack_center_y = y
+    pack_center_z = z
 
     # Do at most 3 mob pack spawn attempts
     for _ in range(3):
-        # Reinitialize to the mob pack's center
-        x = x_copy
-        y = y_copy
-        z = z_copy
-
-        maxOffset = 6
+        x = pack_center_x
+        y = pack_center_y
+        z = pack_center_z
 
         # Spawn at most 4 mobs per pack
         for _ in range(4):
             # Running this 100k times using offset_distribution.py gives this pyramid shape of occurrences, where 0 is the most likely:
             # {-5: 2813, -4: 5607, -3: 8282, -2: 11174, -1: 13888, 0: 16578, 1: 13841, 2: 11116, 3: 8295, 4: 5614, 5: 2792}
             # This means that 2 mobs from a pack of 4 mobs can spawn up to 5 * (4 - 1) = 15 blocks apart on the X axis from one another
+            maxOffset = 6
             x += random.randrange(maxOffset) - random.randrange(maxOffset)
             z += random.randrange(maxOffset) - random.randrange(maxOffset)
 
+            # If mobType is Squid, this function returns true if (x, y, z) is water/lava, and (x, y+1, z) is not a normal block
+            # Otherwise, this function returns true if (x, y-1, z) is a normal block, and (x, y, z) isn't a normal block/water/lava,
+            # and (x, y+1, z) isn't a normal block
             if canMobTypeSpawnAtLocation(mobType, x, y, z):
                 mobCenterX = x + 0.5
                 mobCenterZ = z + 0.5
@@ -105,17 +109,23 @@ def performSpawningNearChunk(chunkCoord, mobType, spawnPoint):
                 if isTooCloseToSpawn(mobCenterX, y, mobCenterZ, spawnPoint):
                     continue
 
-                mobInstance = getMobInstance(mobName)
+                mobInstance = createMob(mobName)
 
+                # Yaw between 0 and 360, pitch of 0
                 setLocationAndAngles(
                     mobInstance, mobCenterX, y, mobCenterZ, random.uniform(0, 360), 0
                 )
 
+                # Animals require spawning on grass, and spawning inside of air with light level > 8
+                # For ghasts, this function has a has 1 in 20 chance to return True
+                # There are other kinds of checks you'll have to decompile the code yourself for
                 if canSpawnHere(mobInstance):
                     spawnedNearChunk += 1
 
                     spawnMob(mobInstance, mobCenterX, y, mobCenterZ)
 
+                    # This check makes sure only 1 ghast can be spawned per tick, for each chunk
+                    # It does not take into account that mobs can be spawned outside of the original chunk!
                     if spawnedNearChunk >= getMaxSpawnedInChunk(mobName):
                         return
 
@@ -270,7 +280,7 @@ def isTooCloseToSpawn(mobCenterX, y, mobCenterZ, spawnPoint):
     return squaredDistanceToSpawn < 576
 
 
-def getMobInstance(mobName):
+def createMob(mobName):
     pass
 
 
