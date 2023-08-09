@@ -2,14 +2,6 @@ import random
 from dataclasses import dataclass
 from enum import Enum, auto
 
-# def getRandomSpawningPointInChunk(x_offset, z_offset):
-#     # Chunks have a width and length of 16
-#     x = x_offset + random.randrange(16)
-#     # The world is only 128 blocks high in Beta 1.7.3
-#     y = random.randrange(128)
-#     z = z_offset + random.randrange(16)
-#     return ChunkPosition(x, y, z)
-
 
 def performSpawning(players, spawnHostileMobs):
     eligibleChunksForSpawning = set()
@@ -30,12 +22,12 @@ def performSpawning(players, spawnHostileMobs):
                     ChunkCoord(neighbor_chunk_x, neighbor_chunk_z)
                 )
 
-    spawned = 0
     spawnPoint = getSpawnPoint()
 
     # Spawn Hostile mobs, then Passive mobs, then Squid
+    # Note that in this Beta 1.7.3 version passive mobs and squid spawn every tick,
+    # rather than every 400 ticks like in modern versions (even version 1.2.5)!
     for mobType in MobType:
-        
         # Don't spawn Hostile mobs if spawnHostileMobs was False
         if mobType == MobType.Hostile and not spawnHostileMobs:
             continue
@@ -51,64 +43,81 @@ def performSpawning(players, spawnHostileMobs):
             continue
 
         for chunkCoord in eligibleChunksForSpawning:
-            biome = getBiomeAtChunk(chunkCoord)
-            spawnableMobs = getSpawnableMobs(biome, mobType)
-            mob = getRandomMob(spawnableMobs)
+            performSpawningNearChunk(chunkCoord, mobType, spawnPoint)
 
-            # Get random spawnpoint in chunk
-            # Chunks have a width and length of 16
-            x = chunkCoord.x * 16 + random.randrange(16)
-            # The world is only 128 blocks high in Beta 1.7.3
-            y = random.randrange(128)
-            z = chunkCoord.z * 16 + random.randrange(16)
 
-            blockType = getBlockType(x, y, z)
+def performSpawningNearChunk(chunkCoord, mobType, spawnPoint):
+    biome = getBiomeAtChunk(chunkCoord)
+    spawnableMobs = getSpawnableMobs(biome, mobType)
+    mobName = getRandomMobName(spawnableMobs)
 
-            if blockType == BlockType.Normal:
-                continue
+    # Get random spawnpoint in chunk
+    # Chunks have a width and length of 16
+    x = chunkCoord.x * 16 + random.randrange(16)
 
-            if blockType == BlockType.Air and mobType == MobType.Squid:
-                continue
+    # The world is only 128 blocks high in Beta 1.7.3
+    y = random.randrange(128)
 
-            if blockType == BlockType.Water and mobType != MobType.Squid:
-                continue
+    z = chunkCoord.z * 16 + random.randrange(16)
 
-            n10 = 0
+    blockType = getBlockType(x, y, z)
 
-            x_copy = x
-            y_copy = y
-            z_copy = z
+    if blockType == BlockType.Normal:
+        return
 
-            for i in range(3):
-                x = x_copy
-                y = y_copy
-                z = z_copy
+    if blockType == BlockType.Air and mobType == MobType.Squid:
+        return
 
-                unknown = 6
+    if blockType == BlockType.Water and mobType != MobType.Squid:
+        return
 
-                for j in range(4):
+    spawnedNearChunk = 0
 
-                    if not SpawnerAnimals.canCreatureTypeSpawnAtLocation(enumCreatureType, world, n11 += world.rand.nextInt(n14) - world.rand.nextInt(n14), n12 += world.rand.nextInt(1) - world.rand.nextInt(1), n13 += world.rand.nextInt(n14) - world.rand.nextInt(n14)):
-                        continue
+    x_copy = x
+    y_copy = y
+    z_copy = z
 
-                    # if (!SpawnerAnimals.canCreatureTypeSpawnAtLocation(enumCreatureType, world, n11 += world.rand.nextInt(n14) - world.rand.nextInt(n14), n12 += world.rand.nextInt(1) - world.rand.nextInt(1), n13 += world.rand.nextInt(n14) - world.rand.nextInt(n14)) || world.getClosestPlayer(f7 = (float)n11 + 0.5f, f6 = (float)n12, f5 = (float)n13 + 0.5f, 24.0) != null || (f4 = (f3 = f7 - (float)((ChunkCoordinates)object).x) * f3 + (f2 = f6 - (float)((ChunkCoordinates)object).y) * f2 + (f = f5 - (float)((ChunkCoordinates)object).z) * f) < 576.0f) continue;
+    # Do at most 3 mob pack spawn attempts
+    for _ in range(3):
+        # Reinitialize to the mob pack's center
+        x = x_copy
+        y = y_copy
+        z = z_copy
 
-                    # try {
-                    #     entityLiving = (EntityLiving)spawnListEntry2.entityClass.getConstructor(World.class).newInstance(world);
-                    # } catch (Exception exception) {
-                    #     exception.printStackTrace();
-                    #     return n;
-                    # }
+        maxOffset = 6
 
-                    # entityLiving.setLocationAndAngles(f7, f6, f5, world.rand.nextFloat() * 360.0f, 0.0f);
-                    
-                    # if (entityLiving.getCanSpawnHere()) {
-                    #     world.entityJoinedWorld(entityLiving);
-                    #     SpawnerAnimals.creatureSpecificInit(entityLiving, world, f7, f6, f5);
-                    #     if (++n10 >= entityLiving.getMaxSpawnedInChunk()) continue block6;
-                    # }
-                    
-                    # n += n10;
+        # Spawn at most 4 mobs per pack
+        for _ in range(4):
+            # Running this 100k times using offset_distribution.py gives this pyramid shape of occurrences, where 0 is the most likely:
+            # {-5: 2813, -4: 5607, -3: 8282, -2: 11174, -1: 13888, 0: 16578, 1: 13841, 2: 11116, 3: 8295, 4: 5614, 5: 2792}
+            # This means that 2 mobs from a pack of 4 mobs can spawn up to 5 * (4 - 1) = 15 blocks apart on the X axis from one another
+            x += random.randrange(maxOffset) - random.randrange(maxOffset)
+            z += random.randrange(maxOffset) - random.randrange(maxOffset)
+
+            if canMobTypeSpawnAtLocation(mobType, x, y, z):
+                mobCenterX = x + 0.5
+                mobCenterZ = z + 0.5
+
+                # If the mob would be spawned within 24 blocks of any player
+                if getClosestPlayer(mobCenterX, y, mobCenterZ, 24) != None:
+                    continue
+
+                if isTooCloseToSpawn(mobCenterX, y, mobCenterZ, spawnPoint):
+                    continue
+
+                mobInstance = getMobInstance(mobName)
+
+                setLocationAndAngles(
+                    mobInstance, mobCenterX, y, mobCenterZ, random.uniform(0, 360), 0
+                )
+
+                if canSpawnHere(mobInstance):
+                    spawnedNearChunk += 1
+
+                    spawnMob(mobInstance, mobCenterX, y, mobCenterZ)
+
+                    if spawnedNearChunk >= getMaxSpawnedInChunk(mobName):
+                        return
 
 
 def getSpawnPoint():
@@ -212,7 +221,7 @@ class MobWithWeight:
     weight: int
 
 
-def getRandomMob(mobs):
+def getRandomMobName(mobs):
     weight = 0
     for mob in mobs:
         weight += mob.weight
@@ -225,9 +234,9 @@ def getRandomMob(mobs):
         if randomWeight >= 0:
             continue
 
-        return mob
+        return mob.modName
 
-    return mobs[0]
+    return mobs[0].modName
 
 
 def getBlockType(x, y, z):
@@ -238,3 +247,53 @@ class BlockType(Enum):
     Normal = auto()
     Air = auto()
     Water = auto()
+
+
+def canMobTypeSpawnAtLocation(mobType, x, y, z):
+    pass
+
+
+def getClosestPlayer(x, y, z, maxPlayerDistance):
+    pass
+
+
+def isTooCloseToSpawn(mobCenterX, y, mobCenterZ, spawnPoint):
+    spawnDiffX = mobCenterX - spawnPoint.x
+    spawnDiffY = y - spawnPoint.y
+    spawnDiffZ = mobCenterZ - spawnPoint.z
+
+    squaredDistanceToSpawn = (
+        spawnDiffX * spawnDiffX + spawnDiffY * spawnDiffY + spawnDiffZ * spawnDiffZ
+    )
+
+    # sqrt(576) is 24, so this makes sure mobs don't spawn within 24 blocks of the world spawn
+    return squaredDistanceToSpawn < 576
+
+
+def getMobInstance(mobName):
+    pass
+
+
+def setLocationAndAngles(mobInstance, x, y, z, yaw, pitch):
+    pass
+
+
+def canSpawnHere(mobInstance):
+    pass
+
+
+def spawnMob(mobInstance):
+    pass
+
+
+def mobSpecificInit(mobInstance, x, y, z):
+    pass
+
+
+def getMaxSpawnedInChunk(mobName):
+    if mobName == MobName.Ghast:
+        return 1
+    elif mobName == MobName.Wolf:
+        return 8
+    else:  # Assuming everything else inherits EntityLiving
+        return 4
