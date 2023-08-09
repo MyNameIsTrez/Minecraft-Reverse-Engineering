@@ -181,12 +181,49 @@ class Biome(Enum):
     Desert = auto()
     Forest = auto()
     Nether = auto()
+    End = auto()
     Rainforest = auto()
     Swamp = auto()
     Taiga = auto()
+    Jungle = auto()
+    MushroomIsland = auto()
+    NetherBridge = auto()
 
 
 def getSpawnableMobs(biome, mobType):
+    if biome == Biome.MushroomIsland:
+        if mobType == MobType.Passive:
+            return [
+                MobWithWeight(MobName.Mooshroom, 8),
+            ]
+        else:
+            return []
+    elif biome == Biome.Nether:
+        if mobType == MobType.Hostile:
+            return [
+                MobWithWeight(MobName.Ghast, 50),
+                MobWithWeight(MobName.ZombiePigman, 100),
+                MobWithWeight(MobName.MagmaCube, 1),
+            ]
+        else:
+            return []
+    elif biome == Biome.NetherBridge:
+        if mobType == MobType.Hostile:
+            return [
+                MobWithWeight(MobName.Blaze, 10),
+                MobWithWeight(MobName.ZombiePigman, 10),
+                MobWithWeight(MobName.MagmaCube, 3),
+            ]
+        else:
+            return []
+    elif biome == Biome.End:
+        if mobType == MobType.Hostile:
+            return [
+                MobWithWeight(MobName.Enderman, 10),
+            ]
+        else:
+            return []
+
     if mobType == MobType.Hostile:
         mobs = [
             MobWithWeight(MobName.Spider, 10),
@@ -194,10 +231,12 @@ def getSpawnableMobs(biome, mobType):
             MobWithWeight(MobName.Skeleton, 10),
             MobWithWeight(MobName.Creeper, 10),
             MobWithWeight(MobName.Slime, 10),
+            MobWithWeight(MobName.Enderman, 1),
         ]
-        if biome == Biome.Nether:
-            mobs.append(MobWithWeight(MobName.Ghast, 10))
-            mobs.append(MobWithWeight(MobName.ZombiePigman, 10))
+
+        if biome == Biome.Jungle:
+            mobs.append(MobWithWeight(MobName.Ocelot, 2))
+
         return mobs
     elif mobType == MobType.Passive:
         mobs = [
@@ -206,8 +245,14 @@ def getSpawnableMobs(biome, mobType):
             MobWithWeight(MobName.Chicken, 10),
             MobWithWeight(MobName.Cow, 8),
         ]
-        if biome == Biome.Forest or biome == Biome.Taiga:
-            mobs.append(MobWithWeight(MobName.Wolf, 2))
+
+        if biome == Biome.Forest:
+            mobs.append(MobWithWeight(MobName.Wolf, 5))
+        elif biome == Biome.Taiga:
+            mobs.append(MobWithWeight(MobName.Wolf, 8))
+        elif biome == Biome.Jungle:
+            mobs.append(MobWithWeight(MobName.Chicken, 10))
+
         return mobs
     elif mobType == MobType.Squid:
         return [
@@ -223,6 +268,7 @@ class MobName(Enum):
     Skeleton = auto()
     Creeper = auto()
     Slime = auto()
+    Enderman = auto()
     Sheep = auto()
     Pig = auto()
     Chicken = auto()
@@ -231,6 +277,9 @@ class MobName(Enum):
     Wolf = auto()
     Ghast = auto()
     ZombiePigman = auto()
+    MagmaCube = auto()
+    Mooshroom = auto()
+    Blaze = auto()
 
 
 @dataclass
