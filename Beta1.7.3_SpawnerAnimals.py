@@ -53,14 +53,14 @@ def performSpawningNearChunk(chunkCoord, mobType, spawnPoint):
 
     # Get random spawnpoint in chunk
     # Chunks have a width and length of 16
-    x = chunkCoord.x * 16 + random.randrange(16)
+    pack_center_x = chunkCoord.x * 16 + random.randrange(16)
 
     # The world is only 128 blocks high in Beta 1.7.3
-    y = random.randrange(128)
+    pack_center_y = random.randrange(128)
 
-    z = chunkCoord.z * 16 + random.randrange(16)
+    pack_center_z = chunkCoord.z * 16 + random.randrange(16)
 
-    blockType = getBlockType(x, y, z)
+    blockType = getBlockType(pack_center_x, pack_center_y, pack_center_z)
 
     # Can't spawn inside of a normal block
     if blockType == BlockType.Normal:
@@ -75,10 +75,6 @@ def performSpawningNearChunk(chunkCoord, mobType, spawnPoint):
         return
 
     spawnedNearChunk = 0
-
-    pack_center_x = x
-    pack_center_y = y
-    pack_center_z = z
 
     # Do at most 3 mob pack spawn attempts
     for _ in range(3):
@@ -95,9 +91,9 @@ def performSpawningNearChunk(chunkCoord, mobType, spawnPoint):
             x += random.randrange(maxOffset) - random.randrange(maxOffset)
             z += random.randrange(maxOffset) - random.randrange(maxOffset)
 
-            # If mobType is Squid, this function returns true if (x, y, z) is water/lava, and (x, y+1, z) is not a normal block
-            # Otherwise, this function returns true if (x, y-1, z) is a normal block, and (x, y, z) isn't a normal block/water/lava,
-            # and (x, y+1, z) isn't a normal block
+            # If mobType is Squid, this function returns true if (x, y, z) is water/lava, AND (x, y+1, z) is not a normal block
+            # Otherwise, this function returns true if (x, y-1, z) is a normal block, AND (x, y, z) isn't a normal block/water/lava,
+            # AND (x, y+1, z) isn't a normal block
             if canMobTypeSpawnAtLocation(mobType, x, y, z):
                 mobCenterX = x + 0.5
                 mobCenterZ = z + 0.5
