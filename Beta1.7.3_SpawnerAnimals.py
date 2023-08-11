@@ -13,6 +13,7 @@ def performSpawning(players, spawnHostileMobs):
         chunk_z = player.z // 16
 
         radius = 8
+        # The + 1 is necessary to include chunk_x_offset = 8
         for chunk_x_offset in range(-radius, radius + 1):
             for chunk_z_offset in range(-radius, radius + 1):
                 neighbor_chunk_x = chunk_x + chunk_x_offset
@@ -86,7 +87,7 @@ def performSpawningNearChunk(chunkCoord, mobType, spawnPoint):
         for _ in range(4):
             # Running this 100k times using offset_distribution.py gives this pyramid shape of occurrences, where 0 is the most likely:
             # {-5: 2813, -4: 5607, -3: 8282, -2: 11174, -1: 13888, 0: 16578, 1: 13841, 2: 11116, 3: 8295, 4: 5614, 5: 2792}
-            # This means that 2 mobs from a pack of 4 mobs can spawn up to 5 * (4 - 1) = 15 blocks apart on the X axis from one another
+            # This means the last mob in the pack can spawn up to 5 * 4 = 20 blocks away from the pack's center X
             maxOffset = 6
             x += random.randrange(maxOffset) - random.randrange(maxOffset)
             z += random.randrange(maxOffset) - random.randrange(maxOffset)
