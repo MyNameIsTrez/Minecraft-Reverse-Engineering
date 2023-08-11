@@ -4,7 +4,7 @@ from enum import Enum, auto
 
 
 def performSpawning(players, spawnHostileMobs, spawnPeacefulMobs):
-    eligibleChunksForSpawning = set()
+    eligibleChunksForSpawning = {}
 
     # Add the chunks surrounding every player to eligibleChunksForSpawning
     # A radius of 8 chunks are added, so 17^2 or 289 chunks per player
@@ -13,14 +13,36 @@ def performSpawning(players, spawnHostileMobs, spawnPeacefulMobs):
         chunk_z = player.z // 16
 
         radius = 8
+        # The + 1 is necessary to include chunk_x_offset = 8
         for chunk_x_offset in range(-radius, radius + 1):
             for chunk_z_offset in range(-radius, radius + 1):
                 neighbor_chunk_x = chunk_x + chunk_x_offset
                 neighbor_chunk_z = chunk_z + chunk_z_offset
 
-                eligibleChunksForSpawning.add(
-                    ChunkCoord(neighbor_chunk_x, neighbor_chunk_z)
+                chunkCoord = ChunkCoord(neighbor_chunk_x, neighbor_chunk_z)
+
+                # Chunks on an edge won't spawn anything
+                # You might think "Why didn't they just set the radius to 7 then?",
+                # but that'd cause the // 256 later on to return 0,
+                # since floor((15 * 15) / 256) is floor(225 / 256)
+                # This'd cause the max mob counts to be 0 in singleplayer
+                # In my opinion the devs should've just used a radius of 7 and done // 200
+                chunkOnEdge = (
+                    (chunk_x_offset == -radius)
+                    or (chunk_x_offset == radius)
+                    or (chunk_z_offset == -radius)
+                    or (chunk_z_offset == radius)
                 )
+
+                if chunkOnEdge:
+                    # This check is so that in multiplayer players can't overwrite
+                    # each others non-edge chunks with edge chunks
+                    if chunkCoord not in eligibleChunksForSpawning:
+                        # True stands for it being a chunk on an edge
+                        eligibleChunksForSpawning[chunkCoord] = True
+                else:
+                    # False stands for it being a chunk *not* on an edge
+                    eligibleChunksForSpawning[chunkCoord] = False
 
     spawnPoint = getSpawnPoint()
 
@@ -47,8 +69,9 @@ def performSpawning(players, spawnHostileMobs, spawnPeacefulMobs):
         ):
             continue
 
-        for chunkCoord in eligibleChunksForSpawning:
-            performSpawningNearChunk(chunkCoord, mobType, spawnPoint)
+        for chunkCoord, chunkOnEdge in eligibleChunksForSpawning.items():
+            if not chunkOnEdge:
+                performSpawningNearChunk(chunkCoord, mobType, spawnPoint)
 
 
 def performSpawningNearChunk(chunkCoord, mobType, spawnPoint):
@@ -98,7 +121,7 @@ def performSpawningNearChunk(chunkCoord, mobType, spawnPoint):
         for _ in range(4):
             # Running this 100k times using offset_distribution.py gives this pyramid shape of occurrences, where 0 is the most likely:
             # {-5: 2813, -4: 5607, -3: 8282, -2: 11174, -1: 13888, 0: 16578, 1: 13841, 2: 11116, 3: 8295, 4: 5614, 5: 2792}
-            # This means that 2 mobs from a pack of 4 mobs can spawn up to 5 * (4 - 1) = 15 blocks apart on the X axis from one another
+            # This means the last mob in the pack can spawn up to 5 * 4 = 20 blocks away from the pack's center X
             maxOffset = 6
             x += random.randrange(maxOffset) - random.randrange(maxOffset)
             z += random.randrange(maxOffset) - random.randrange(maxOffset)
