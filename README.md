@@ -2,6 +2,8 @@
 
 Rewriting parts of Minecraft in Python to understand the game better.
 
+I used [RetroMCP-Java](https://github.com/MCPHackers/RetroMCP-Java) to decompile the game versions to their Java code.
+
 # Facts shared by 1.7.3 and 1.2.5
 - A chunk is 16 blocks wide and long
 - Mobs can't spawn within 24 blocks of any player or the world spawn
