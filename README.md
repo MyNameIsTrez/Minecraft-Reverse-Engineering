@@ -7,6 +7,8 @@ I used [RetroMCP-Java](https://github.com/MCPHackers/RetroMCP-Java) to decompile
 # Facts shared by 1.7.3 and 1.2.5
 - A chunk is 16 blocks wide and long
 - Mobs can't spawn within 24 blocks of any player or the world spawn
+- Mobs despawn when they're more than 128 blocks away from every player
+- If a mob has been more than 32 blocks away from any player for more than 600 game ticks (20 game ticks in a second), they have a 1/800 chance to despawn every game tick
 - For roughly every player, there can only be 70 hostile mobs, 15 passive mobs, and 5 squid until they stop spawning
 - First hostile mobs, then passive mobs, then squid spawn
 - 4 mob spawn attempts happen per pack
